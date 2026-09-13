@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Invoice history · Invoice Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  </head>
+  <body>
+    <header class="site-header"><a class="brand" href="{{ url_for('index') }}">invoice<span>local</span></a><nav><a href="{{ url_for('index') }}">New invoice</a></nav></header>
+    <main class="page-shell history-page">
+      <section class="hero"><p class="eyebrow">Local SQLite history</p><h1>Invoice register</h1><p>Numbers are permanent. Cancelling one records its status and never frees it for reuse.</p></section>
+      {% if request.args.get('cancelled') %}<div class="success">{{ request.args.get('cancelled') }} has been marked cancelled.</div>{% endif %}
+      <section class="card history-card">
+        {% if invoices %}
+        <div class="history-table-wrap"><table class="history-table"><thead><tr><th>Invoice number</th><th>Created (UTC)</th><th>Customer</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>
+          {% for invoice in invoices %}<tr><td><strong>{{ invoice.invoice_no }}</strong></td><td>{{ invoice.created_at }}</td><td>{{ invoice.customer_name }}</td><td>₹{{ '%.2f'|format(invoice.grand_total) }}</td><td><span class="status status-{{ invoice.status }}">{{ invoice.status }}</span></td><td>{% if invoice.status == 'issued' %}<form method="post" action="{{ url_for('cancel', invoice_no=invoice.invoice_no) }}"><button class="text-button" type="submit">Cancel</button></form>{% else %}—{% endif %}</td></tr>{% endfor %}
+        </tbody></table></div>
+        {% else %}<div class="empty-state"><h2>No invoices yet</h2><p>Your issued and cancelled numbers will appear here.</p><a class="button button-primary" href="{{ url_for('index') }}">Create an invoice</a></div>{% endif %}
+      </section>
+    </main>
+  </body>
+</html>

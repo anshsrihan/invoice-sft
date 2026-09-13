@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Tax Invoice {{ invoice.invoice_no }}</title>
+    <style>
+      @page { size: A4; margin: 12mm; }
+      * { box-sizing: border-box; }
+      body { color: #172033; font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; line-height: 1.35; }
+      .invoice { width: 100%; }
+      .topline { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; border-bottom: 3px solid #1565c0; padding-bottom: 13px; }
+      .title { color: #1565c0; font-size: 24pt; font-weight: 800; letter-spacing: .04em; margin: 0 0 3px; }
+      .subtitle { color: #5c6b82; font-size: 9pt; font-weight: 700; letter-spacing: .08em; margin: 0; text-transform: uppercase; }
+      .invoice-meta { min-width: 190px; border: 1px solid #cdd9e8; border-radius: 6px; overflow: hidden; }
+      .invoice-meta div { display: flex; justify-content: space-between; gap: 16px; padding: 5px 8px; border-bottom: 1px solid #e2eaf3; }
+      .invoice-meta div:last-child { border: 0; }
+      .invoice-meta span { color: #5c6b82; }
+      .invoice-meta strong { text-align: right; }
+      .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 17px 0; }
+      .party { border: 1px solid #cdd9e8; border-radius: 6px; padding: 11px; min-height: 130px; }
+      .party-label { color: #1565c0; font-size: 8pt; font-weight: 800; letter-spacing: .08em; margin-bottom: 7px; text-transform: uppercase; }
+      .party-name { font-size: 12pt; font-weight: 700; margin-bottom: 4px; }
+      .address { color: #3c4b63; margin: 0 0 7px; white-space: pre-line; }
+      .detail { margin: 2px 0; }
+      .detail b { display: inline-block; min-width: 80px; }
+      .supply { display: flex; justify-content: space-between; background: #edf5ff; border: 1px solid #cfe4fb; border-radius: 5px; margin: 0 0 15px; padding: 7px 10px; }
+      .supply strong { color: #0c4e99; }
+      table { border-collapse: collapse; width: 100%; }
+      .items th { background: #1565c0; color: white; font-size: 8.5pt; font-weight: 700; padding: 7px 5px; text-align: right; }
+      .items th:first-child, .items th:nth-child(2), .items th:nth-child(3) { text-align: left; }
+      .items td { border: 1px solid #dce5f0; padding: 7px 5px; text-align: right; vertical-align: top; }
+      .items td:first-child, .items td:nth-child(2), .items td:nth-child(3) { text-align: left; }
+      .items tbody tr:nth-child(even) { background: #f8fbff; }
+      .items .description { font-weight: 700; }
+      .summary { display: flex; justify-content: flex-end; margin-top: 15px; }
+      .totals { width: 280px; }
+      .totals td { padding: 4px 7px; }
+      .totals td:last-child { text-align: right; }
+      .totals .tax-row td { border-top: 1px solid #dce5f0; }
+      .totals .grand td { background: #1565c0; color: white; font-size: 11pt; font-weight: 700; padding: 8px 7px; }
+      .notes { border-top: 1px solid #cdd9e8; display: grid; grid-template-columns: 1.2fr .8fr; gap: 24px; margin-top: 25px; padding-top: 11px; }
+      .notes h3 { color: #1565c0; font-size: 9pt; margin: 0 0 5px; text-transform: uppercase; }
+      .notes p { color: #3c4b63; font-size: 8.5pt; margin: 0 0 5px; }
+      .signature { min-height: 70px; text-align: right; }
+      .signature .line { border-top: 1px solid #71809a; margin: 42px 0 4px auto; width: 190px; }
+      .muted { color: #5c6b82; }
+    </style>
+  </head>
+  <body>
+    <main class="invoice">
+      <header class="topline">
+        <div>
+          <h1 class="title">TAX INVOICE</h1>
+          <p class="subtitle">Original for recipient</p>
+        </div>
+        <div class="invoice-meta">
+          <div><span>Invoice no.</span><strong>{{ invoice.invoice_no }}</strong></div>
+          <div><span>Invoice date</span><strong>{{ invoice.invoice_date }}</strong></div>
+          <div><span>Reverse charge</span><strong>No</strong></div>
+        </div>
+      </header>
+
+      <section class="parties">
+        <div class="party">
+          <div class="party-label">Supplier</div>
+          <div class="party-name">{{ invoice.seller.name }}</div>
+          <p class="address">{{ invoice.seller.address }}</p>
+          <p class="detail"><b>GSTIN:</b> {{ invoice.seller.gstin }}</p>
+          <p class="detail"><b>State:</b> {{ invoice.seller.state }} ({{ invoice.seller.state_code }})</p>
+          {% if invoice.seller.phone %}<p class="detail"><b>Phone:</b> {{ invoice.seller.phone }}</p>{% endif %}
+          {% if invoice.seller.email %}<p class="detail"><b>Email:</b> {{ invoice.seller.email }}</p>{% endif %}
+        </div>
+        <div class="party">
+          <div class="party-label">Bill to / Recipient</div>
+          <div class="party-name">{{ invoice.buyer.name }}</div>
+          <p class="address">{{ invoice.buyer.address }}</p>
+          <p class="detail"><b>GSTIN:</b> {{ invoice.buyer.gstin or "Unregistered recipient" }}</p>
+          <p class="detail"><b>State:</b> {{ invoice.buyer.state }} ({{ invoice.buyer.state_code }})</p>
+        </div>
+      </section>
+
+      <div class="supply">
+        <span>Place of supply: <strong>{{ invoice.place_of_supply }} ({{ invoice.place_of_supply_code }})</strong></span>
+        <span>Tax treatment: <strong>{{ "CGST + SGST" if invoice.totals.tax_type == "intra" else "IGST" }}</strong></span>
+      </div>
+
+      <table class="items">
+        <thead>
+          <tr>
+            <th>#</th><th>Description of goods / services</th><th>HSN / SAC</th><th>Qty</th><th>Unit price</th><th>Taxable value</th><th>GST rate</th><th>CGST</th><th>SGST</th><th>IGST</th><th>Line total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in invoice.totals["items"] %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td class="description">{{ item.description }}</td>
+            <td>{{ item.hsn_sac }}</td>
+            <td>{{ item.quantity|number }}</td>
+            <td>{{ item.unit_price|money }}</td>
+            <td>{{ item.taxable_value|money }}</td>
+            <td>{{ item.rate_pct|number }}%</td>
+            <td>{{ item.cgst|money }}</td>
+            <td>{{ item.sgst|money }}</td>
+            <td>{{ item.igst|money }}</td>
+            <td>{{ item.total|money }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <section class="summary">
+        <table class="totals">
+          <tr><td>Taxable value</td><td>{{ invoice.totals.taxable_total|money }}</td></tr>
+          <tr class="tax-row"><td>CGST</td><td>{{ invoice.totals.cgst_total|money }}</td></tr>
+          <tr><td>SGST</td><td>{{ invoice.totals.sgst_total|money }}</td></tr>
+          <tr><td>IGST</td><td>{{ invoice.totals.igst_total|money }}</td></tr>
+          <tr class="grand"><td>Invoice total</td><td>{{ invoice.totals.grand_total|money }}</td></tr>
+        </table>
+      </section>
+
+      <footer class="notes">
+        <div>
+          <h3>Declaration</h3>
+          <p>We declare that this invoice shows the actual price of the goods/services described and that all particulars are true and correct.</p>
+          <p class="muted">This is a computer-generated tax invoice. Subject to applicable GST law.</p>
+        </div>
+        <div class="signature">
+          <p>For <strong>{{ invoice.seller.name }}</strong></p>
+          <div class="line"></div>
+          <p>Authorised signatory</p>
+        </div>
+      </footer>
+    </main>
+  </body>
+</html>
