@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ "Company Settings" if is_edit else "Add Company" }} · invoicelocal{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow"><span class="eyebrow-dot"></span> {{ "Company configuration" if is_edit else "Business entity setup" }}</p>
+    <h1>{{ "Update company profile" if is_edit else "Create a business entity" }}</h1>
+    <p class="hero-subtitle">Configure your statutory GST details, invoice prefix, and optional banking &amp; terms.</p>
+  </div>
+  <div class="hero-visual" aria-hidden="true">
+    <div class="lottie-badge" data-lottie="company"></div>
+  </div>
+</section>
+
+{% if saved %}
+<div class="success" role="status">
+  <i data-lucide="check-circle-2"></i><span>Company settings saved successfully.</span>
+</div>
+{% endif %}
+
+{% if legacy_summary and legacy_summary.pending %}
+<div class="info-banner" role="status">
+  <i data-lucide="info"></i>
+  <div>
+    <strong>Existing records detected:</strong> Saving this company will attach
+    {{ legacy_summary.invoice_numbers|join(", ") }} and its financial-year counter to this business entity.
+  </div>
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('companies.company_settings', company_id=company_id) if is_edit else url_for('companies.new_company') }}" class="card" style="max-width:780px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="card-header">
+    <div class="card-title-group">
+      <span class="card-icon"><i data-lucide="landmark"></i></span>
+      <div>
+        <h2 class="card-title">Statutory identity</h2>
+        <p class="card-subtitle">Printed on all generated tax invoices</p>
+      </div>
+    </div>
+  </div>
+
+  <label>Legal name <input required name="legal_name" value="{{ form.legal_name }}" placeholder="Acme Technologies Pvt. Ltd."></label>
+  {% if errors.get('legal_name') %}<p class="field-error">{{ errors['legal_name'] }}</p>{% endif %}
+
+  <label>Registered address <textarea required name="address" rows="3" placeholder="Full registered business address">{{ form.address }}</textarea></label>
+  {% if errors.get('address') %}<p class="field-error">{{ errors['address'] }}</p>{% endif %}
+
+  <div class="split-fields">
+    <label>State / UT
+      <select required name="state">
+        <option value="">Choose state</option>
+        {% for code, state in states.items() %}
+        <option value="{{ state }}" {% if form.state == state %}selected{% endif %}>{{ state }} ({{ code }})</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>GSTIN <input required class="gstin" name="gstin" value="{{ form.gstin }}" maxlength="15" placeholder="27ABCDE1234F1Z5"></label>
+  </div>
+  {% if errors.get('state') %}<p class="field-error">{{ errors['state'] }}</p>{% endif %}
+  {% if errors.get('gstin') %}<p class="field-error">{{ errors['gstin'] }}</p>{% endif %}
+
+  <div class="card-header" style="margin-top:28px;">
+    <div class="card-title-group">
+      <span class="card-icon emerald"><i data-lucide="hash"></i></span>
+      <div>
+        <h2 class="card-title">Numbering &amp; currency</h2>
+        <p class="card-subtitle">Prefix is 1–5 characters; resulting numbers fit within 16 characters</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="split-fields">
+    <label>Invoice prefix <input required class="mono" name="invoice_prefix" value="{{ form.invoice_prefix }}" maxlength="5" placeholder="INV"></label>
+    <label>Currency <input required class="mono" name="currency" value="{{ form.currency or 'INR' }}" maxlength="5"></label>
+  </div>
+  {% if errors.get('invoice_prefix') %}<p class="field-error">{{ errors['invoice_prefix'] }}</p>{% endif %}
+  {% if errors.get('currency') %}<p class="field-error">{{ errors['currency'] }}</p>{% endif %}
+
+  <div class="card-header" style="margin-top:28px;">
+    <div class="card-title-group">
+      <span class="card-icon"><i data-lucide="credit-card"></i></span>
+      <div>
+        <h2 class="card-title">Contact &amp; payment details</h2>
+        <p class="card-subtitle">Optional metadata included on your PDFs</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="split-fields">
+    <label>PAN <span class="optional">optional</span> <input class="mono" name="pan" value="{{ form.pan }}" maxlength="10" placeholder="ABCDE1234F"></label>
+    <label>Phone <span class="optional">optional</span> <input name="phone" value="{{ form.phone }}" placeholder="+91 98765 43210"></label>
+  </div>
+  {% if errors.get('pan') %}<p class="field-error">{{ errors['pan'] }}</p>{% endif %}
+
+  <label>Email <span class="optional">optional</span> <input type="email" name="email" value="{{ form.email }}" placeholder="billing@company.com"></label>
+  <label>Bank details <span class="optional">optional</span> <textarea name="bank_details" rows="2" placeholder="Account name, A/C number, IFSC, Bank &amp; Branch">{{ form.bank_details }}</textarea></label>
+  <label>Default terms <span class="optional">optional</span> <textarea name="terms_text" rows="2" placeholder="Payment due within 15 days.">{{ form.terms_text }}</textarea></label>
+
+  <div style="margin-top:24px;display:flex;gap:12px;align-items:center;">
+    <button class="button button-primary" type="submit">
+      <i data-lucide="check"></i><span>{{ "Save settings" if is_edit else "Create company" }}</span>
+    </button>
+    <a class="button button-secondary" href="{{ url_for('companies.list_companies') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

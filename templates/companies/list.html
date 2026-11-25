@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Companies · invoicelocal{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow"><span class="eyebrow-dot"></span> Workspace entities</p>
+    <h1>Your companies</h1>
+    <p class="hero-subtitle">Each company maintains independent invoice numbering, tax settings, and customer history.</p>
+  </div>
+  <div class="hero-visual">
+    <a class="button button-primary" href="{{ url_for('companies.new_company') }}">
+      <i data-lucide="plus"></i><span>Add company</span>
+    </a>
+  </div>
+</section>
+
+{% if companies %}
+<section class="companies-grid">
+  {% for comp in companies %}
+  {% set is_current = active_company and comp.id == active_company.id %}
+  <article class="card company-card {% if is_current %}is-active{% endif %}">
+    <div>
+      <div class="company-card-top">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="company-avatar">{{ comp.legal_name[:2]|upper }}</div>
+          <div>
+            <h2 class="card-title">{{ comp.legal_name }}</h2>
+            <p class="card-subtitle">{{ comp.state }} ({{ comp.state_code }})</p>
+          </div>
+        </div>
+        {% if is_current %}
+        <span class="status status-issued">Active</span>
+        {% endif %}
+      </div>
+
+      <div class="company-meta" style="margin-top:18px;">
+        <div class="meta-box">
+          <div class="meta-label">GSTIN</div>
+          <div class="meta-value mono">{{ comp.gstin }}</div>
+        </div>
+        <div class="meta-box">
+          <div class="meta-label">Invoice Prefix</div>
+          <div class="meta-value mono">{{ comp.invoice_prefix }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="company-actions">
+      {% if not is_current %}
+      <form method="post" action="{{ url_for('companies.switch_company', company_id=comp.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button button-secondary" type="submit" style="min-height:36px;padding:6px 14px;">
+          <i data-lucide="repeat"></i><span>Switch to entity</span>
+        </button>
+      </form>
+      {% else %}
+      <a class="button button-secondary" href="{{ url_for('invoices.index') }}" style="min-height:36px;padding:6px 14px;">
+        <i data-lucide="file-plus-2"></i><span>New invoice</span>
+      </a>
+      {% endif %}
+      <a class="pill-link" href="{{ url_for('companies.company_settings', company_id=comp.id) }}">
+        <i data-lucide="sliders-horizontal"></i><span>Settings</span>
+      </a>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% else %}
+<section class="card">
+  <div class="empty-state">
+    <div class="empty-state-lottie" data-lottie="empty"></div>
+    <h2>No companies configured yet</h2>
+    <p>Add your first business entity to start generating GST-compliant invoices.</p>
+    <a class="button button-primary" href="{{ url_for('companies.new_company') }}">
+      <i data-lucide="plus"></i><span>Create business entity</span>
+    </a>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

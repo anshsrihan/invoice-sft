@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Create Workspace · invoicelocal{% endblock %}
+{% block content %}
+<section class="auth-shell">
+  <div class="auth-showcase">
+    <div class="auth-lottie-wrap" data-lottie="auth"></div>
+    <p class="eyebrow"><span class="eyebrow-dot"></span> Initial setup</p>
+    <h1 style="font-family:var(--font-display);font-size:clamp(30px,3.6vw,42px);font-weight:800;letter-spacing:-0.04em;line-height:1.08;margin:0;">
+      Set up your private invoicing studio.
+    </h1>
+    <p class="hero-subtitle">One workspace account manages all of your business entities, GSTINs, and invoice registers.</p>
+    <ul class="auth-feature-list">
+      <li><i data-lucide="shield-check"></i><span>100% local SQLite storage on your machine</span></li>
+      <li><i data-lucide="layers"></i><span>Unlimited business entities under one login</span></li>
+      <li><i data-lucide="file-check-2"></i><span>Validated GSTINs &amp; HSN/SAC line items</span></li>
+    </ul>
+  </div>
+
+  <div class="card auth-card">
+    <h2>Create workspace account</h2>
+    <p class="card-subtitle">Get started in less than a minute.</p>
+    <form method="post" action="{{ url_for('auth.register') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Workspace name
+        <input required name="workspace_name" value="{{ form.workspace_name }}" placeholder="e.g. Studio & Ventures">
+      </label>
+      {% if errors.get('workspace_name') %}<p class="field-error">{{ errors['workspace_name'] }}</p>{% endif %}
+
+      <label>Email address
+        <input required type="email" name="email" value="{{ form.email }}" autocomplete="email" placeholder="owner@company.com">
+      </label>
+      {% if errors.get('email') %}<p class="field-error">{{ errors['email'] }}</p>{% endif %}
+
+      <label>Password
+        <div class="input-with-toggle">
+          <input required type="password" name="password" minlength="8" autocomplete="new-password" placeholder="Minimum 8 characters">
+          <button type="button" class="pw-toggle" aria-label="Show password"><i data-lucide="eye"></i></button>
+        </div>
+      </label>
+      {% if errors.get('password') %}<p class="field-error">{{ errors['password'] }}</p>{% endif %}
+
+      <label>Confirm password
+        <div class="input-with-toggle">
+          <input required type="password" name="confirm_password" minlength="8" autocomplete="new-password" placeholder="Re-enter password">
+          <button type="button" class="pw-toggle" aria-label="Show password"><i data-lucide="eye"></i></button>
+        </div>
+      </label>
+      {% if errors.get('confirm_password') %}<p class="field-error">{{ errors['confirm_password'] }}</p>{% endif %}
+
+      <button class="button button-primary" type="submit" style="width:100%;margin-top:20px;">
+        <span>Create account &amp; continue</span><i data-lucide="arrow-right"></i>
+      </button>
+    </form>
+  </div>
+</section>
+{% endblock %}

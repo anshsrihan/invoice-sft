@@ -48,8 +48,13 @@
       const quantity = numericValue(row, "quantity");
       const unitPrice = numericValue(row, "unit_price");
       const rate = numericValue(row, "gst_rate");
-      if (quantity <= 0 || unitPrice < 0 || rate < 0) return;
+      const lineCell = row.querySelector(".line-amount-cell");
+      if (quantity <= 0 || unitPrice < 0 || rate < 0) {
+        if (lineCell) lineCell.textContent = money(0);
+        return;
+      }
       const lineTaxable = roundMoney(quantity * unitPrice);
+      if (lineCell) lineCell.textContent = money(lineTaxable);
       taxable += lineTaxable;
       if (mode === "intra") {
         // Match the server: CGST and SGST are each rounded on the line.

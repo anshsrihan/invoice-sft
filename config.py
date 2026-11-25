@@ -12,6 +12,13 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_PATH = os.path.join(BASE_DIR, "invoice_state.db")
 
+SECRET_KEY = os.getenv("INVOICE_SECRET_KEY") or os.getenv("FLASK_SECRET_KEY")
+ALLOW_REGISTRATION = os.getenv("INVOICE_ALLOW_REGISTRATION", "").strip().lower() in {"1", "true", "yes"}
+SESSION_COOKIE_SECURE = os.getenv("INVOICE_SECURE_COOKIES", "").strip().lower() in {"1", "true", "yes"}
+MIN_PASSWORD_LENGTH = 8
+MAX_INVOICE_NO_LENGTH = 16
+INVOICE_TEMPLATE_VERSION = "v1"
+
 GST_RATES = ("0", "5", "12", "18", "28")
 
 # GST state/UT codes.  The code lets validators check that a supplied GSTIN

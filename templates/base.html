@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Invoice Studio · invoicelocal{% endblock %}</title>
+    <script>
+      (() => {
+        const t = localStorage.getItem("invoicelocal_theme");
+        if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <script src="https://unpkg.com/lucide@latest" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js" defer></script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}" defer></script>
+  </head>
+  <body {% block body_attrs %}{% endblock %}>
+    <header class="site-header">
+      <a class="brand" href="{{ url_for('invoices.index') if current_user.is_authenticated else url_for('auth.login') }}">
+        <span class="brand-mark" aria-hidden="true">
+          <i data-lucide="receipt"></i>
+        </span>
+        <span class="brand-text">invoice<span>local</span></span>
+      </a>
+      <nav class="site-nav">
+        {% if current_user.is_authenticated %}
+          {% if user_companies %}
+          <form method="post" action="{{ url_for('companies.switch_company', company_id=active_company.id) if active_company else '#' }}" id="company-switcher-form" class="company-switcher">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <i data-lucide="building-2" aria-hidden="true"></i>
+            <select aria-label="Active company" onchange="this.form.action='/companies/' + this.value + '/switch'; this.form.submit();">
+              {% for comp in user_companies %}
+              <option value="{{ comp.id }}" {% if active_company and comp.id == active_company.id %}selected{% endif %}>{{ comp.legal_name }}</option>
+              {% endfor %}
+            </select>
+          </form>
+          <span class="nav-divider" aria-hidden="true"></span>
+          {% endif %}
+          <a class="nav-link {% if request.endpoint == 'invoices.index' %}active{% endif %}" href="{{ url_for('invoices.index') }}">
+            <i data-lucide="file-plus-2"></i><span>New invoice</span>
+          </a>
+          <a class="nav-link {% if request.endpoint == 'invoices.history' %}active{% endif %}" href="{{ url_for('invoices.history') }}">
+            <i data-lucide="history"></i><span>History</span>
+          </a>
+          <a class="nav-link {% if request.endpoint in ('companies.list_companies', 'companies.new_company') %}active{% endif %}" href="{{ url_for('companies.list_companies') }}">
+            <i data-lucide="layers"></i><span>Companies</span>
+          </a>
+          {% if active_company %}
+          <a class="nav-link {% if request.endpoint == 'companies.company_settings' %}active{% endif %}" href="{{ url_for('companies.company_settings', company_id=active_company.id) }}">
+            <i data-lucide="sliders-horizontal"></i><span>Settings</span>
+          </a>
+          {% endif %}
+          <span class="nav-divider" aria-hidden="true"></span>
+          <button type="button" id="theme-toggle" class="icon-btn" aria-label="Toggle theme">
+            <i data-lucide="moon"></i>
+          </button>
+          <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="logout-btn">
+              <i data-lucide="log-out"></i><span>Logout</span>
+            </button>
+          </form>
+        {% else %}
+          <button type="button" id="theme-toggle" class="icon-btn" aria-label="Toggle theme">
+            <i data-lucide="moon"></i>
+          </button>
+        {% endif %}
+      </nav>
+    </header>
+    <main class="page-shell {% block main_class %}{% endblock %}">
+      {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

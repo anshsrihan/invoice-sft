@@ -1,131 +1,163 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Invoice Generator</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-  </head>
-  <body data-states='{{ states|tojson }}'>
-    <header class="site-header">
-      <a class="brand" href="{{ url_for('index') }}">invoice<span>local</span></a>
-      <nav><a href="{{ url_for('history') }}">Invoice history</a></nav>
-    </header>
+{% extends "base.html" %}
+{% block title %}New Invoice · {{ company.legal_name }}{% endblock %}
+{% block body_attrs %}data-states='{{ states|tojson }}'{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow"><span class="eyebrow-dot"></span> GST Studio · {{ company.legal_name }}</p>
+    <h1>Craft a clean tax invoice.</h1>
+    <p class="hero-subtitle">Instant local GST calculation with automatic intra/inter-state treatment and pixel-crisp PDF export.</p>
+  </div>
+  <div class="hero-visual" aria-hidden="true">
+    <div class="lottie-badge" data-lottie="hero"></div>
+  </div>
+</section>
 
-    <main class="page-shell">
-      <section class="hero">
-        <p class="eyebrow">Local-only GST invoices</p>
-        <h1>Make a tax invoice, not a spreadsheet.</h1>
-        <p>GST is calculated on your machine. Generate a polished PDF when everything looks right.</p>
-      </section>
+{% if errors.get('form') %}<div class="alert" role="alert"><i data-lucide="alert-circle"></i><span>{{ errors['form'] }}</span></div>{% endif %}
+{% if errors.get('items') %}<div class="alert" role="alert"><i data-lucide="alert-circle"></i><span>{{ errors['items'] }}</span></div>{% endif %}
 
-      {% if errors.get('form') %}<div class="alert" role="alert">{{ errors['form'] }}</div>{% endif %}
-      {% if errors.get('items') %}<div class="alert" role="alert">{{ errors['items'] }}</div>{% endif %}
-
-      <form id="invoice-form" method="post" action="{{ url_for('generate') }}" novalidate>
-        <section class="detail-grid">
-          <fieldset class="card">
-            <legend>Supplier details</legend>
-            <label>Legal name <input required name="seller_name" value="{{ form.seller_name }}" autocomplete="organization"></label>
-            {% if errors.get('seller_name') %}<p class="field-error">{{ errors['seller_name'] }}</p>{% endif %}
-            <label>Address <textarea required name="seller_address" rows="3">{{ form.seller_address }}</textarea></label>
-            {% if errors.get('seller_address') %}<p class="field-error">{{ errors['seller_address'] }}</p>{% endif %}
-            <label>State / UT
-              <select required name="seller_state" id="seller-state">
-                <option value="">Choose state</option>
-                {% for code, state in states.items() %}<option value="{{ state }}" {% if form.seller_state == state %}selected{% endif %}>{{ state }} ({{ code }})</option>{% endfor %}
-              </select>
-            </label>
-            {% if errors.get('seller_state') %}<p class="field-error">{{ errors['seller_state'] }}</p>{% endif %}
-            <label>GSTIN <input required class="gstin" name="seller_gstin" value="{{ form.seller_gstin }}" maxlength="15" placeholder="27ABCDE1234F1Z5"></label>
-            <p class="field-hint">15 characters; checked against the chosen state.</p>
-            {% if errors.get('seller_gstin') %}<p class="field-error">{{ errors['seller_gstin'] }}</p>{% endif %}
-            <div class="split-fields">
-              <label>Phone <input name="seller_phone" value="{{ form.seller_phone }}" autocomplete="tel"></label>
-              <label>Email <input type="email" name="seller_email" value="{{ form.seller_email }}" autocomplete="email"></label>
-            </div>
-          </fieldset>
-
-          <fieldset class="card">
-            <legend>Recipient details</legend>
-            <label>Customer / business name <input required name="buyer_name" value="{{ form.buyer_name }}" autocomplete="organization"></label>
-            {% if errors.get('buyer_name') %}<p class="field-error">{{ errors['buyer_name'] }}</p>{% endif %}
-            <label>Billing address <textarea required name="buyer_address" rows="3">{{ form.buyer_address }}</textarea></label>
-            {% if errors.get('buyer_address') %}<p class="field-error">{{ errors['buyer_address'] }}</p>{% endif %}
-            <label>State / UT
-              <select required name="buyer_state" id="buyer-state">
-                <option value="">Choose state</option>
-                {% for code, state in states.items() %}<option value="{{ state }}" {% if form.buyer_state == state %}selected{% endif %}>{{ state }} ({{ code }})</option>{% endfor %}
-              </select>
-            </label>
-            {% if errors.get('buyer_state') %}<p class="field-error">{{ errors['buyer_state'] }}</p>{% endif %}
-            <label>GSTIN <span class="optional">optional for unregistered customers</span><input class="gstin" name="buyer_gstin" value="{{ form.buyer_gstin }}" maxlength="15" placeholder="27ABCDE1234F1Z5"></label>
-            <p class="field-hint">If supplied, it is validated before PDF export.</p>
-            {% if errors.get('buyer_gstin') %}<p class="field-error">{{ errors['buyer_gstin'] }}</p>{% endif %}
-            <div class="split-fields">
-              <label>Place of supply
-                <select required name="place_of_supply" id="place-of-supply">
-                  <option value="">Choose state</option>
-                  {% for code, state in states.items() %}<option value="{{ state }}" {% if form.place_of_supply == state %}selected{% endif %}>{{ state }} ({{ code }})</option>{% endfor %}
-                </select>
-              </label>
-              <label>Invoice date <input required type="date" name="invoice_date" value="{{ form.invoice_date }}"></label>
-            </div>
-            {% if errors.get('place_of_supply') %}<p class="field-error">{{ errors['place_of_supply'] }}</p>{% endif %}
-            {% if errors.get('invoice_date') %}<p class="field-error">{{ errors['invoice_date'] }}</p>{% endif %}
-          </fieldset>
-        </section>
-
-        <section class="card line-card">
-          <div class="card-heading">
-            <div><h2>Line items</h2><p>GST is calculated separately for every row.</p></div>
-            <button type="button" class="button button-secondary" id="add-line">+ Add line</button>
+<form id="invoice-form" method="post" action="{{ url_for('invoices.generate') }}" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <section class="detail-grid">
+    <fieldset class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon"><i data-lucide="building-2"></i></span>
+          <div>
+            <h2 class="card-title">Supplier profile</h2>
+            <p class="card-subtitle">Billed from your active business entity</p>
           </div>
-          <div class="item-table-wrap">
-            <table class="item-table">
-              <thead><tr><th>Description</th><th>HSN / SAC</th><th>Qty</th><th>Unit price (₹)</th><th>GST</th><th aria-label="Remove"></th></tr></thead>
-              <tbody id="line-items">
-                {% for item in form.line_items %}
-                <tr class="line-item">
-                  <td><input required name="description" value="{{ item.description }}" placeholder="Product or service"></td>
-                  <td><input required name="hsn_sac" value="{{ item.hsn_sac }}" inputmode="numeric" pattern="[0-9]{4,8}" placeholder="9983"></td>
-                  <td><input required name="quantity" type="number" min="0.001" step="0.001" value="{{ item.quantity }}"></td>
-                  <td><input required name="unit_price" type="number" min="0" step="0.01" value="{{ item.unit_price }}" placeholder="0.00"></td>
-                  <td><select required name="gst_rate">{% for rate in gst_rates %}<option value="{{ rate }}" {% if item.gst_rate|string == rate|string %}selected{% endif %}>{{ rate }}%</option>{% endfor %}</select></td>
-                  <td><button type="button" class="remove-line" aria-label="Remove line">×</button></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+        </div>
+        <a class="pill-link" href="{{ url_for('companies.company_settings', company_id=company.id) }}">
+          <i data-lucide="pencil"></i><span>Edit</span>
+        </a>
+      </div>
+      <label>Legal name <input readonly name="seller_name" value="{{ form.seller_name }}"></label>
+      <label>Address <textarea readonly name="seller_address" rows="3">{{ form.seller_address }}</textarea></label>
+      <div class="split-fields">
+        <label>State / UT
+          <input readonly id="seller-state" name="seller_state" value="{{ form.seller_state }}">
+        </label>
+        <label>GSTIN <input readonly class="gstin" name="seller_gstin" value="{{ form.seller_gstin }}"></label>
+      </div>
+      <div class="split-fields">
+        <label>Phone <input readonly name="seller_phone" value="{{ form.seller_phone }}"></label>
+        <label>Email <input readonly type="email" name="seller_email" value="{{ form.seller_email }}"></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon emerald"><i data-lucide="user-check"></i></span>
+          <div>
+            <h2 class="card-title">Recipient &amp; supply</h2>
+            <p class="card-subtitle">Customer billing &amp; place of supply</p>
           </div>
-          {% for key, message in errors.items() %}{% if key.startswith('item_') %}<p class="field-error">{{ message }}</p>{% endif %}{% endfor %}
-        </section>
+        </div>
+      </div>
+      <label>Customer / business name <input required name="buyer_name" value="{{ form.buyer_name }}" autocomplete="organization" placeholder="Acme Studios Pvt. Ltd."></label>
+      {% if errors.get('buyer_name') %}<p class="field-error">{{ errors['buyer_name'] }}</p>{% endif %}
+      <label>Billing address <textarea required name="buyer_address" rows="3" placeholder="Street, City, PIN code">{{ form.buyer_address }}</textarea></label>
+      {% if errors.get('buyer_address') %}<p class="field-error">{{ errors['buyer_address'] }}</p>{% endif %}
+      <div class="split-fields">
+        <label>State / UT
+          <select required name="buyer_state" id="buyer-state">
+            <option value="">Choose state</option>
+            {% for code, state in states.items() %}<option value="{{ state }}" {% if form.buyer_state == state %}selected{% endif %}>{{ state }} ({{ code }})</option>{% endfor %}
+          </select>
+        </label>
+        <label>GSTIN <span class="optional">optional</span><input class="gstin" name="buyer_gstin" value="{{ form.buyer_gstin }}" maxlength="15" placeholder="27ABCDE1234F1Z5"></label>
+      </div>
+      {% if errors.get('buyer_state') %}<p class="field-error">{{ errors['buyer_state'] }}</p>{% endif %}
+      {% if errors.get('buyer_gstin') %}<p class="field-error">{{ errors['buyer_gstin'] }}</p>{% endif %}
+      <p class="field-hint">Unregistered customers can leave GSTIN blank; supplied GSTINs are validated before export.</p>
+      <div class="split-fields">
+        <label>Place of supply
+          <select required name="place_of_supply" id="place-of-supply">
+            <option value="">Choose state</option>
+            {% for code, state in states.items() %}<option value="{{ state }}" {% if form.place_of_supply == state %}selected{% endif %}>{{ state }} ({{ code }})</option>{% endfor %}
+          </select>
+        </label>
+        <label>Invoice date <input required type="date" name="invoice_date" value="{{ form.invoice_date }}"></label>
+      </div>
+      {% if errors.get('place_of_supply') %}<p class="field-error">{{ errors['place_of_supply'] }}</p>{% endif %}
+      {% if errors.get('invoice_date') %}<p class="field-error">{{ errors['invoice_date'] }}</p>{% endif %}
+    </fieldset>
+  </section>
 
-        <section class="calculator-strip" aria-live="polite">
-          <div class="tax-mode"><span id="tax-mode-badge" class="tax-badge">Select states</span><span id="tax-mode-message">Tax treatment will update automatically.</span></div>
-          <dl class="live-totals">
-            <div><dt>Taxable</dt><dd id="taxable-total">₹0.00</dd></div>
-            <div><dt>CGST</dt><dd id="cgst-total">₹0.00</dd></div>
-            <div><dt>SGST</dt><dd id="sgst-total">₹0.00</dd></div>
-            <div><dt>IGST</dt><dd id="igst-total">₹0.00</dd></div>
-            <div class="total-highlight"><dt>Invoice total</dt><dd id="grand-total">₹0.00</dd></div>
-          </dl>
-          <button class="button button-primary" id="generate-button" type="submit">Generate invoice PDF</button>
-        </section>
-      </form>
-    </main>
+  <section class="card line-card">
+    <div class="card-heading">
+      <div>
+        <h2>Line items</h2>
+        <p>Taxable value and GST are rounded per line item for statutory accuracy.</p>
+      </div>
+      <button type="button" class="button button-secondary" id="add-line">
+        <i data-lucide="plus"></i><span>Add line item</span>
+      </button>
+    </div>
+    <div class="item-table-wrap">
+      <table class="item-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>HSN / SAC</th>
+            <th>Qty</th>
+            <th>Unit price (₹)</th>
+            <th>GST</th>
+            <th style="text-align:right;">Amount</th>
+            <th aria-label="Remove"></th>
+          </tr>
+        </thead>
+        <tbody id="line-items">
+          {% for item in form.line_items %}
+          <tr class="line-item">
+            <td><input required name="description" value="{{ item.description }}" placeholder="Product or service description"></td>
+            <td><input required class="mono" name="hsn_sac" value="{{ item.hsn_sac }}" inputmode="numeric" pattern="[0-9]{4,8}" placeholder="9983"></td>
+            <td><input required name="quantity" type="number" min="0.001" step="0.001" value="{{ item.quantity }}"></td>
+            <td><input required name="unit_price" type="number" min="0" step="0.01" value="{{ item.unit_price }}" placeholder="0.00"></td>
+            <td><select required name="gst_rate">{% for rate in gst_rates %}<option value="{{ rate }}" {% if item.gst_rate|string == rate|string %}selected{% endif %}>{{ rate }}%</option>{% endfor %}</select></td>
+            <td class="line-amount-cell">₹0.00</td>
+            <td><button type="button" class="remove-line" aria-label="Remove line">&times;</button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% for key, message in errors.items() %}{% if key.startswith('item_') %}<p class="field-error">{{ message }}</p>{% endif %}{% endfor %}
+  </section>
 
-    <template id="line-template">
-      <tr class="line-item">
-        <td><input required name="description" placeholder="Product or service"></td>
-        <td><input required name="hsn_sac" inputmode="numeric" pattern="[0-9]{4,8}" placeholder="9983"></td>
-        <td><input required name="quantity" type="number" min="0.001" step="0.001" value="1"></td>
-        <td><input required name="unit_price" type="number" min="0" step="0.01" placeholder="0.00"></td>
-        <td><select required name="gst_rate">{% for rate in gst_rates %}<option value="{{ rate }}" {% if rate == '18' %}selected{% endif %}>{{ rate }}%</option>{% endfor %}</select></td>
-        <td><button type="button" class="remove-line" aria-label="Remove line">×</button></td>
-      </tr>
-    </template>
-    <script src="{{ url_for('static', filename='js/calculator.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='js/form.js') }}" defer></script>
-  </body>
-</html>
+  <section class="calculator-strip" aria-live="polite">
+    <div class="tax-mode">
+      <span id="tax-mode-badge" class="tax-badge">Select states</span>
+      <span id="tax-mode-message" class="tax-mode-message">Tax treatment updates automatically.</span>
+    </div>
+    <dl class="live-totals">
+      <div><dt>Taxable</dt><dd id="taxable-total">₹0.00</dd></div>
+      <div><dt>CGST</dt><dd id="cgst-total">₹0.00</dd></div>
+      <div><dt>SGST</dt><dd id="sgst-total">₹0.00</dd></div>
+      <div><dt>IGST</dt><dd id="igst-total">₹0.00</dd></div>
+      <div class="total-highlight"><dt>Invoice total</dt><dd id="grand-total">₹0.00</dd></div>
+    </dl>
+    <button class="button button-primary" id="generate-button" type="submit">
+      <i data-lucide="file-down"></i><span>Generate PDF</span>
+    </button>
+  </section>
+</form>
+
+<template id="line-template">
+  <tr class="line-item">
+    <td><input required name="description" placeholder="Product or service description"></td>
+    <td><input required class="mono" name="hsn_sac" inputmode="numeric" pattern="[0-9]{4,8}" placeholder="9983"></td>
+    <td><input required name="quantity" type="number" min="0.001" step="0.001" value="1"></td>
+    <td><input required name="unit_price" type="number" min="0" step="0.01" placeholder="0.00"></td>
+    <td><select required name="gst_rate">{% for rate in gst_rates %}<option value="{{ rate }}" {% if rate == '18' %}selected{% endif %}>{{ rate }}%</option>{% endfor %}</select></td>
+    <td class="line-amount-cell">₹0.00</td>
+    <td><button type="button" class="remove-line" aria-label="Remove line">&times;</button></td>
+  </tr>
+</template>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/calculator.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/form.js') }}" defer></script>
+{% endblock %}

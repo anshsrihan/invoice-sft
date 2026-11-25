@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Sign in · invoicelocal{% endblock %}
+{% block content %}
+<section class="auth-shell">
+  <div class="auth-showcase">
+    <div class="auth-lottie-wrap" data-lottie="auth"></div>
+    <p class="eyebrow"><span class="eyebrow-dot"></span> Local-first GST Studio</p>
+    <h1 style="font-family:var(--font-display);font-size:clamp(30px,3.6vw,42px);font-weight:800;letter-spacing:-0.04em;line-height:1.08;margin:0;">
+      Invoicing built for modern businesses.
+    </h1>
+    <p class="hero-subtitle">Everything stays on your machine — fast GST math, multi-company isolation, and crisp PDFs.</p>
+    <ul class="auth-feature-list">
+      <li><i data-lucide="check-circle-2"></i><span>Automatic CGST/SGST &amp; IGST calculation</span></li>
+      <li><i data-lucide="check-circle-2"></i><span>Independent financial-year numbering per entity</span></li>
+      <li><i data-lucide="check-circle-2"></i><span>Instant, print-ready tax invoice PDFs</span></li>
+    </ul>
+  </div>
+
+  <div class="card auth-card">
+    <h2>Welcome back</h2>
+    <p class="card-subtitle">Sign in to access your business workspace.</p>
+    {% if errors.get('form') %}
+    <div class="alert" role="alert" style="margin-bottom:18px;">
+      <i data-lucide="alert-circle"></i><span>{{ errors['form'] }}</span>
+    </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('auth.login') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+      <label>Email address
+        <input required type="email" name="email" value="{{ email }}" autocomplete="email" placeholder="you@company.com">
+      </label>
+      <label>Password
+        <div class="input-with-toggle">
+          <input required type="password" name="password" autocomplete="current-password" placeholder="••••••••">
+          <button type="button" class="pw-toggle" aria-label="Show password"><i data-lucide="eye"></i></button>
+        </div>
+      </label>
+      <button class="button button-primary" type="submit" style="width:100%;margin-top:20px;">
+        <span>Sign in</span><i data-lucide="arrow-right"></i>
+      </button>
+      {% if registration_open %}
+      <p class="field-hint" style="margin-top:16px;text-align:center;">
+        First time here? <a href="{{ url_for('auth.register') }}" style="font-weight:650;">Create owner account</a>
+      </p>
+      {% endif %}
+    </form>
+  </div>
+</section>
+{% endblock %}

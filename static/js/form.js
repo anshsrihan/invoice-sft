@@ -34,7 +34,9 @@
   }
 
   function validateAll() {
-    validateGstin(form.elements.seller_gstin, sellerState, true);
+    if (form.elements.seller_gstin && !form.elements.seller_gstin.readOnly) {
+      validateGstin(form.elements.seller_gstin, sellerState, true);
+    }
     validateGstin(form.elements.buyer_gstin, buyerState, false);
     submitButton.disabled = !form.checkValidity();
   }
